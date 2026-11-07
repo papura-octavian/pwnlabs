@@ -1,4 +1,4 @@
 @baseurl = https://localhost:7173
 
 // 1. Send Health check
-GET {{{{baseurl}}}}/health/
+GET {{baseurl}}/health
