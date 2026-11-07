@@ -1,0 +1,6 @@
+@Pwnlabs.Api_HostAddress = http://localhost:5131
+
+GET {{Pwnlabs.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
