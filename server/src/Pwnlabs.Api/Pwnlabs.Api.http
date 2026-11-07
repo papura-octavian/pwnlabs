@@ -1,6 +1,4 @@
-@Pwnlabs.Api_HostAddress = http://localhost:5131
+@baseurl = https://localhost:7173
 
-GET {{Pwnlabs.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
+// 1. Send Health check
+GET {{{{baseurl}}}}/health/
