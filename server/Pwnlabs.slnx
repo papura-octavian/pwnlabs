@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Pwnlabs.Api/Pwnlabs.Api.csproj" />
+    <Project Path="src/Pwnlabs.Application/Pwnlabs.Application.csproj" />
+    <Project Path="src/Pwnlabs.Domain/Pwnlabs.Domain.csproj" />
+    <Project Path="src/Pwnlabs.Infrastructure/Pwnlabs.Infrastructure.csproj" />
+  </Folder>
+</Solution>
