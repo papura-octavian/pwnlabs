@@ -34,8 +34,7 @@ pwnlabs/
 ### Run the API
 
 ```powershell
-cd server/src/Pwnlabs.Api
-dotnet run --launch-profile https
+dotnet run --project server/src/Pwnlabs.Api --launch-profile https
 ```
 
 Health check: `https://localhost:7173/health`
