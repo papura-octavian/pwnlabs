@@ -13,7 +13,9 @@ public static class DependencyInjection
     )
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Name is missing.");
+            ?? throw new InvalidOperationException(
+                "Connection string 'DefaultConnection' is not configured. " +
+                "Set it with: dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<value>\" --project server/src/Pwnlabs.Api");
 
         services.AddDbContext<PwnlabsDbContext>(options =>
         options.UseNpgsql(connectionString));
