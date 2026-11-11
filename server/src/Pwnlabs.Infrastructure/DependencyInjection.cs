@@ -18,7 +18,10 @@ public static class DependencyInjection
                 "Set it with: dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"<value>\" --project server/src/Pwnlabs.Api");
 
         services.AddDbContext<PwnlabsDbContext>(options =>
-        options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString));
+
+        services.AddHealthChecks()
+            .AddDbContextCheck<PwnlabsDbContext>();
 
         return services;
     }
