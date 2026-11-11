@@ -1,4 +1,60 @@
 @baseurl = https://localhost:7173
 
-// 1. Send Health check
+### Health check
+# Expected: 200 Healthy
 GET {{baseurl}}/health
+
+### Register a valid user
+# Expected: 201 Created, no password/passwordHash in body
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "alice@example.com",
+  "password": "CorrectHorse123"
+}
+
+### Same email, different letter case
+# Expected: 409 Conflict
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice2",
+  "email": "ALICE@Example.com",
+  "password": "CorrectHorse123"
+}
+
+### Same username
+# Expected: 409 Conflict
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "email": "other@example.com",
+  "password": "CorrectHorse123"
+}
+
+### Invalid data
+# Expected: 400, errors for username, email and password
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "a",
+  "email": "not-an-email",
+  "password": "short"
+}
+
+### Same username, different letter case
+# Expected: 409, Username is already taken
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "ALICE",
+  "email": "alice-upper@example.com",
+  "password": "CorrectHorse123"
+}

@@ -16,7 +16,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(16);
 
-        builder.HasIndex(u => u.Username)
+        // Normalized username settings
+        builder.Property(u => u.NormalizedUsername)
+            .IsRequired()
+            .HasMaxLength(16);
+
+        builder.HasIndex(u => u.NormalizedUsername)
             .IsUnique();
         
         // Email settings

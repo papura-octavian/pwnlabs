@@ -6,6 +6,7 @@ public class User
 {
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public required string Username { get; set; }
+    public required string NormalizedUsername { get; set; }
     public required string Email { get; set; }
     public required string PasswordHash { get; set; }
     public UserRole Role { get; set; } = UserRole.Player;
