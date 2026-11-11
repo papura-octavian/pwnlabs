@@ -18,9 +18,9 @@ public class UserRepository : IUserRepository
         return await _db.Users.AnyAsync(u => u.Email == email);
     }
 
-    public async Task<bool> ExistsByUsernameAsync(string username)
+    public async Task<bool> ExistsByUsernameAsync(string normalizedUsername)
     {
-        return await _db.Users.AnyAsync(u => u.Username == username);
+        return await _db.Users.AnyAsync(u => u.NormalizedUsername == normalizedUsername);
     }
 
     public async Task AddAsync(User user)
