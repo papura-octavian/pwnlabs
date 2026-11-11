@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pwnlabs.Infrastructure.Persistence;
+using Pwnlabs.Application.Abstractions;
+using Pwnlabs.Infrastructure.Persistence.Repositories;
+using Pwnlabs.Infrastructure.Security;
 
 namespace Pwnlabs.Infrastructure;
 
@@ -22,6 +25,9 @@ public static class DependencyInjection
 
         services.AddHealthChecks()
             .AddDbContextCheck<PwnlabsDbContext>();
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 
         return services;
     }
