@@ -1,6 +1,6 @@
-namespace Pwnlabs.Application.Auth.Dtos;
 using System.ComponentModel.DataAnnotations;
 
+namespace Pwnlabs.Application.Auth.Dtos;
 public record RegisterRequest
 {
     [Required]
@@ -9,7 +9,7 @@ public record RegisterRequest
     public string Username { get; init; }  = string.Empty;
 
     [Required]
-    [StringLength(256)]
+    [StringLength(250)]
     [EmailAddress]
     public string Email { get; init; }  = string.Empty;
 

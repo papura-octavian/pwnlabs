@@ -20,22 +20,22 @@ public class AuthService : IAuthService
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var username = request.Username.Trim();
-        var normalisedUsername = username.ToLowerInvariant();
+        var normalizedUsername = username.ToLowerInvariant();
 
         if (await _userRepository.ExistsByEmailAsync(email))
         {
             throw new ConflictException("Email is already registered.");
         }
 
-        if (await _userRepository.ExistsByUsernameAsync(normalisedUsername))
+        if (await _userRepository.ExistsByUsernameAsync(normalizedUsername))
         {
-            throw new ConflictException("Username is already taken");
+            throw new ConflictException("Username is already taken.");
         }
 
         var user = new User
         {
             Username = username,
-            NormalizedUsername = normalisedUsername,
+            NormalizedUsername = normalizedUsername,
             Email = email,
             PasswordHash = _passwordHasher.Hash(request.Password)
         };
