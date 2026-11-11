@@ -1,4 +1,24 @@
 @baseurl = https://localhost:7173
 
-// 1. Send Health check
+### Health check
 GET {{baseurl}}/health
+
+### Register a new user
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "thavian",
+  "email": "thavian@example.com",
+  "password": "SuperSecret123!"
+}
+
+### Register again with the same email (uppercase)
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "someoneelse",
+  "email": "THAVIAN@Example.com",
+  "password": "AnotherPass123!"
+}

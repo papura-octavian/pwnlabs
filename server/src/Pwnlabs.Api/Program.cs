@@ -1,5 +1,6 @@
 using Pwnlabs.Infrastructure;
 using Pwnlabs.Application;
+using Pwnlabs.Api.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +16,12 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddApplication();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
