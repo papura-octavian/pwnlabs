@@ -72,7 +72,13 @@ dotnet run --project server/src/Pwnlabs.Api --launch-profile https
 
 Health check: `https://localhost:7173/health`
 
-### 5. Run the client
+### 5. Connect to DB
+
+```powershell
+docker exec -it pwnlabs-db psql -U pwnlabs -d pwnlabs
+```
+
+### 6. Run the client
 
 ```powershell
 cd client
