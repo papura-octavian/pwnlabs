@@ -9,7 +9,7 @@ public record RegisterRequest
     public string Username { get; init; }  = string.Empty;
 
     [Required]
-    [StringLength(250)]
+    [StringLength(254)]
     [EmailAddress]
     public string Email { get; init; }  = string.Empty;
 
