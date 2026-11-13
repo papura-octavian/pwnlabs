@@ -1,6 +1,10 @@
 using Pwnlabs.Infrastructure;
 using Pwnlabs.Application;
 using Pwnlabs.Api.ExceptionHandling;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Pwnlabs.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +17,37 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
+    ?? throw new InvalidOperationException("Jwt section is not configured.");
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+
+            NameClaimType = "username",
+            RoleClaimType = "role"
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddApplication();
 
@@ -31,6 +66,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

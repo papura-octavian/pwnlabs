@@ -23,11 +23,15 @@ public static class DependencyInjection
         services.AddDbContext<PwnlabsDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+
         services.AddHealthChecks()
             .AddDbContextCheck<PwnlabsDbContext>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+
+        services.AddSingleton<ITokenService, JwtTokenService>();
 
         return services;
     }

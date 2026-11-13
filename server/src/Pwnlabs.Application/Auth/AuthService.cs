@@ -9,11 +9,17 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITokenService _tokenService;
 
-    public AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher)
+    public AuthService(
+        IUserRepository userRepository,
+        IPasswordHasher passwordHasher,
+        ITokenService tokenService
+    )
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
+        _tokenService = tokenService;
     }
 
     public async Task<UserResponse> RegisterAsync(RegisterRequest request)
@@ -52,4 +58,16 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = await _userRepository.GetByEmailAsync(email);
+
+        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+        {
+            throw new UnauthorizedException("Invalid email or password.");
+        }
+
+        return _tokenService.CreateAccessToken(user);
+    }
 }

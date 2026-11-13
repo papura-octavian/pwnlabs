@@ -5,4 +5,5 @@ namespace Pwnlabs.Application.Auth;
 public interface IAuthService
 {
     Task<UserResponse> RegisterAsync(RegisterRequest request);
+    Task<AuthResponse> LoginAsync(LoginRequest request);
 }
