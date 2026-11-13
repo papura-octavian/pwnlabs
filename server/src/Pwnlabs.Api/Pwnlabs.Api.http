@@ -87,3 +87,46 @@ Authorization: Bearer {{login.response.body.accessToken}}
 ### Me without token
 # Expected: 401
 GET {{baseurl}}/api/v1/users/me
+
+### Login (sets the refresh cookie)
+# @name login
+POST {{baseurl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "CorrectHorse123"
+}
+
+### Refresh (REST Client sends the cookie automatically)
+POST {{baseurl}}/api/v1/auth/refresh
+
+### Logout
+POST {{baseurl}}/api/v1/auth/logout
+
+### Refresh after logout
+# Expected: 401
+POST {{baseurl}}/api/v1/auth/refresh
+
+### Reuse test: login
+# @name reuse
+# @no-cookie-jar
+POST {{baseurl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "CorrectHorse123"
+}
+
+### Reuse test: first refresh with the stolen token
+# Expected: 200
+# @no-cookie-jar
+POST {{baseurl}}/api/v1/auth/refresh
+Cookie: refreshToken=D0F24F8EDCDF5E9E80CA1BD6B412AC4D12C4AB03AD0396AD04030858BECB76E7DD72719F0C8B95DC8BF64446E426906D5150D8686C60DEF094BF4ABDEFFC0B7E
+
+### Reuse test: same token again
+# Expected: 401, and ALL of alice's tokens get revoked
+# @no-cookie-jar
+POST {{baseurl}}/api/v1/auth/refresh
+Cookie: refreshToken=D0F24F8EDCDF5E9E80CA1BD6B412AC4D12C4AB03AD0396AD04030858BECB76E7DD72719F0C8B95DC8BF64446E426906D5150D8686C60DEF094BF4ABDEFFC0B7E
