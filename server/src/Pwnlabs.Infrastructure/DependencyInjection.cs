@@ -29,6 +29,7 @@ public static class DependencyInjection
             .AddDbContextCheck<PwnlabsDbContext>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
 
         services.AddSingleton<ITokenService, JwtTokenService>();

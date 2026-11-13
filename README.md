@@ -58,13 +58,24 @@ The API reads the connection string from [user secrets](https://learn.microsoft.
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=<POSTGRES_DB>;Username=<POSTGRES_USER>;Password=<POSTGRES_PASSWORD>" --project server/src/Pwnlabs.Api
 ```
 
-### 3. Apply database migrations
+### 3. Configure the JWT signing key
+
+Generate a random key and store it in user secrets (run all lines in the same terminal):
+
+```powershell
+$bytes = New-Object byte[] 64
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$key = [Convert]::ToBase64String($bytes)
+dotnet user-secrets set "Jwt:Key" $key --project server/src/Pwnlabs.Api
+```
+
+### 4. Apply database migrations
 
 ```powershell
 dotnet ef database update --project server/src/Pwnlabs.Infrastructure --startup-project server/src/Pwnlabs.Api
 ```
 
-### 4. Run the API
+### 5. Run the API
 
 ```powershell
 dotnet run --project server/src/Pwnlabs.Api --launch-profile https
@@ -72,13 +83,13 @@ dotnet run --project server/src/Pwnlabs.Api --launch-profile https
 
 Health check: `https://localhost:7173/health`
 
-### 5. Connect to DB
+### 6. Connect to DB
 
 ```powershell
 docker exec -it pwnlabs-db psql -U pwnlabs -d pwnlabs
 ```
 
-### 6. Run the client
+### 7. Run the client
 
 ```powershell
 cd client

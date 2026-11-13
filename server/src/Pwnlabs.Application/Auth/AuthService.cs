@@ -10,16 +10,19 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
 
     public AuthService(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        ITokenService tokenService
+        ITokenService tokenService,
+        IRefreshTokenRepository refreshTokenRepository
     )
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
+        _refreshTokenRepository = refreshTokenRepository;
     }
 
     public async Task<UserResponse> RegisterAsync(RegisterRequest request)
@@ -58,7 +61,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<AuthResult> LoginAsync(LoginRequest request)
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await _userRepository.GetByEmailAsync(email);
@@ -68,6 +71,64 @@ public class AuthService : IAuthService
             throw new UnauthorizedException("Invalid email or password.");
         }
 
-        return _tokenService.CreateAccessToken(user);
+        return await IssueTokensAsync(user);
+    }
+
+    public async Task<AuthResult> RefreshAsync(string refreshToken)
+    {
+        var hash = _tokenService.HashToken(refreshToken);
+        var stored = await _refreshTokenRepository.GetByHashAsync(hash);
+
+        if (stored is null)
+        {
+            throw new UnauthorizedException("Invalid refresh token.");
+        }
+
+        if (stored.RevokedAt is not null)
+        {
+            await _refreshTokenRepository.RevokeAllForUserAsync(stored.UserId);
+            throw new UnauthorizedException("Invalid refresh token.");
+        }
+
+        if (stored.ExpiresAt <= DateTime.UtcNow)
+        {
+            throw new UnauthorizedException("Invalid refresh token.");
+        }
+
+        stored.RevokedAt = DateTime.UtcNow;
+        return await IssueTokensAsync(stored.User!);
+    }
+
+    public async Task LogoutAsync(string refreshToken)
+    {
+        var hash = _tokenService.HashToken(refreshToken);
+        var stored = await _refreshTokenRepository.GetByHashAsync(hash);
+
+        if (stored is not null && stored.RevokedAt is null)
+        {
+            stored.RevokedAt = DateTime.UtcNow;
+            await _refreshTokenRepository.SaveChangesAsync();
+        }
+    }
+
+    private async Task<AuthResult> IssueTokensAsync(User user)
+    {
+        var access  = _tokenService.CreateAccessToken(user);
+        var refresh = _tokenService.GenerateRefreshToken();
+
+        _refreshTokenRepository.Add(new RefreshToken
+        {
+            UserId    = user.Id,
+            TokenHash = refresh.TokenHash,
+            ExpiresAt = refresh.ExpiresAt
+        });
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        return new AuthResult
+        {
+            Response = access,
+            RefreshToken = refresh.Token,
+            RefreshTokenExpiresAt = refresh.ExpiresAt
+        };
     }
 }
