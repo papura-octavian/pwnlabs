@@ -7,7 +7,6 @@ namespace Pwnlabs.Api.Controllers;
 [ApiController]
 [Route("api/v1/users")]
 [Authorize]
-
 public class UsersController : ControllerBase
 {
     [HttpGet("me")]
