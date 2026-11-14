@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Pwnlabs.Application.Abstractions;
 using Pwnlabs.Application.Labs.Dtos;
+using Pwnlabs.Domain.Entities;
 
 namespace Pwnlabs.Application.Labs;
 
@@ -20,9 +21,26 @@ public class LabService : ILabService
         _options = options.Value;
     }
 
-    public Task<LabResponse> StartAsync(Guid userId)
+    public async Task<LabResponse> StartAsync(Guid userId)
     {
-        throw new NotImplementedException();
+        Guid labId = Guid.CreateVersion7();
+
+        var started = await _orchestrator.StartLabAsync(_options.DefaultImage, labId, userId);
+
+        var lab = new LabInstance
+        {
+            Id = labId,
+            UserId = userId,
+            ContainerId = started.ContainerId,
+            Image = _options.DefaultImage,
+            HostPort = started.HostPort,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(_options.LifetimeMinutes)
+        };
+
+        _labRepository.Add(lab);
+        await _labRepository.SaveChangesAsync();
+
+        return ToResponse(lab);
     }
 
     public Task<List<LabResponse>> GetMyLabsAsync(Guid userId)
@@ -33,5 +51,18 @@ public class LabService : ILabService
     public Task StopAsync(Guid userId, Guid labId)
     {
         throw new NotImplementedException();
+    }
+
+    private static LabResponse ToResponse(LabInstance lab)
+    {
+        return new LabResponse
+        {
+            Id = lab.Id,
+            Image = lab.Image,
+            Url = $"http://127.0.0.1:{lab.HostPort}",
+            Status = lab.Status.ToString(),
+            CreatedAt = lab.CreatedAt,
+            ExpiresAt = lab.ExpiresAt
+        };
     }
 }
