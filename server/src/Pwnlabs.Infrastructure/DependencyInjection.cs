@@ -6,6 +6,7 @@ using Pwnlabs.Application.Abstractions;
 using Pwnlabs.Infrastructure.Persistence.Repositories;
 using Pwnlabs.Infrastructure.Security;
 using Pwnlabs.Application.Labs;
+using Pwnlabs.Infrastructure.Labs;
 
 namespace Pwnlabs.Infrastructure;
 
