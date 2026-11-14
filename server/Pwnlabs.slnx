@@ -5,4 +5,7 @@
     <Project Path="src/Pwnlabs.Domain/Pwnlabs.Domain.csproj" />
     <Project Path="src/Pwnlabs.Infrastructure/Pwnlabs.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pwnlabs.Application.Tests/Pwnlabs.Application.Tests.csproj" />
+  </Folder>
 </Solution>
