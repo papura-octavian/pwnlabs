@@ -37,4 +37,29 @@ public class AuthServiceTests
 
         await _userRepository.DidNotReceive().AddAsync(Arg.Any<User>());
     }
+
+    [Fact]
+    public async Task LoginAsync_WrongPassword_ThrowsUnauthorizedException()
+    {
+        // Arrange
+        var request = new LoginRequest
+        {
+            Email = "alice@example.com",
+            Password = "IncorrectHorse123"
+        };
+        User user = new User
+        {
+            Username = "alice",
+            NormalizedUsername = "alice".ToLowerInvariant(),
+            Email = request.Email,
+            PasswordHash = _passwordHasher.Hash(request.Password)
+        };
+
+        _userRepository.GetByEmailAsync(request.Email).Returns(user);
+        _passwordHasher.Verify(request.Password, user.PasswordHash).Returns(false);
+
+        // Act + Assert
+        await Assert.ThrowsAsync<UnauthorizedException>(() => _sut.LoginAsync(request));
+        _tokenService.DidNotReceive().CreateAccessToken(Arg.Any<User>());
+    }
 }
