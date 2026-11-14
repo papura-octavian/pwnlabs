@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Pwnlabs.Application.Abstractions;
 using Pwnlabs.Application.Labs.Dtos;
 using Pwnlabs.Domain.Entities;
+using Pwnlabs.Application.Common.Exceptions;
 
 namespace Pwnlabs.Application.Labs;
 
@@ -23,6 +24,11 @@ public class LabService : ILabService
 
     public async Task<LabResponse> StartAsync(Guid userId)
     {
+        var count = await _labRepository.CountActiveByUserAsync(userId);
+        if (count >= _options.MaxActiveLabsPerUser)
+        {
+            throw new ConflictException("You already have an active lab. Stop it before starting a new one.");
+        }
         Guid labId = Guid.CreateVersion7();
 
         var started = await _orchestrator.StartLabAsync(_options.DefaultImage, labId, userId);

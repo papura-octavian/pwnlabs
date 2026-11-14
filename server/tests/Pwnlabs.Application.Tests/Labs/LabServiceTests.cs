@@ -57,4 +57,20 @@ public class LabServiceTests
         Assert.Equal("http://127.0.0.1:55012", result.Url);
         Assert.InRange(result.ExpiresAt, before.AddMinutes(60), after.AddMinutes(60));
     }
+
+    [Fact]
+    public async Task StartAsync_ActiveLabExists_ThrowsConflictException()
+    {
+        // Arrange
+        _labRepository.CountActiveByUserAsync(_userId).Returns(1);
+
+        // Act + Assert
+        await Assert.ThrowsAsync<ConflictException>(() => _sut.StartAsync(_userId));
+        await _orchestrator.DidNotReceive().StartLabAsync(
+            Arg.Any<string>(), 
+            Arg.Any<Guid>(), 
+            Arg.Any<Guid>()
+        );
+    }
+
 }
