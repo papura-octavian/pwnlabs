@@ -5,6 +5,8 @@ using Pwnlabs.Infrastructure.Persistence;
 using Pwnlabs.Application.Abstractions;
 using Pwnlabs.Infrastructure.Persistence.Repositories;
 using Pwnlabs.Infrastructure.Security;
+using Pwnlabs.Application.Labs;
+using Pwnlabs.Infrastructure.Labs;
 
 namespace Pwnlabs.Infrastructure;
 
@@ -24,15 +26,18 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.Configure<LabOptions>(configuration.GetSection("Labs"));
 
         services.AddHealthChecks()
             .AddDbContextCheck<PwnlabsDbContext>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+        services.AddScoped<ILabRepository, LabRepository>();
 
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<ILabOrchestrator, DockerLabOrchestrator>();
 
         return services;
     }

@@ -130,3 +130,68 @@ Cookie: refreshToken=D0F24F8EDCDF5E9E80CA1BD6B412AC4D12C4AB03AD0396AD04030858BEC
 # @no-cookie-jar
 POST {{baseurl}}/api/v1/auth/refresh
 Cookie: refreshToken=D0F24F8EDCDF5E9E80CA1BD6B412AC4D12C4AB03AD0396AD04030858BECB76E7DD72719F0C8B95DC8BF64446E426906D5150D8686C60DEF094BF4ABDEFFC0B7E
+
+### Login
+# @name login
+POST {{baseurl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "CorrectHorse123"
+}
+
+### Start a lab
+# @name startLab
+POST {{baseurl}}/api/v1/labs
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### My labs
+GET {{baseurl}}/api/v1/labs
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Start a second lab
+# Expected: 409
+POST {{baseurl}}/api/v1/labs
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Stop the lab
+DELETE {{baseurl}}/api/v1/labs/{{startLab.response.body.id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### REGISTER evilTwin
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "evilTwin",
+  "email": "elivTwin@example.com",
+  "password": "CorrectHorse123"
+}
+
+### Login as evilTwin
+# @name loginEvil
+POST {{baseurl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "elivTwin@example.com",
+  "password": "CorrectHorse123"
+}
+
+### evilTwin starts a lab
+# @name startLabEvil
+POST {{baseurl}}/api/v1/labs
+Authorization: Bearer {{loginEvil.response.body.accessToken}}
+
+### evilTwin's labs
+GET {{baseurl}}/api/v1/labs
+Authorization: Bearer {{loginEvil.response.body.accessToken}}
+
+### Stop the lab
+DELETE {{baseurl}}/api/v1/labs/{{startLab.response.body.id}}
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### Stop lab 01a1db90
+DELETE {{baseurl}}/api/v1/labs/01a1db90-887e-7965-97e2-73a5094be1c2
+Authorization: Bearer {{loginEvil.response.body.accessToken}}
