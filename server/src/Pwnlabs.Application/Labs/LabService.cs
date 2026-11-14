@@ -29,7 +29,8 @@ public class LabService : ILabService
         {
             throw new ConflictException("You already have an active lab. Stop it before starting a new one.");
         }
-        Guid labId = Guid.CreateVersion7();
+
+        var labId = Guid.CreateVersion7();
 
         var started = await _orchestrator.StartLabAsync(_options.DefaultImage, labId, userId);
 
