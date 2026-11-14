@@ -41,7 +41,7 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
             {
                 PortBindings = new Dictionary<string, IList<PortBinding>>
                 {
-                    [containerPort] = [new PortBinding { HostIP = "127.0.0.1", HostPort = "80" }]
+                    [containerPort] = [new PortBinding { HostIP = "127.0.0.1", HostPort = "" }]
                 },
                 Memory = _options.MemoryLimitMb * 1024L * 1024L
             }
