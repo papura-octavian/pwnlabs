@@ -3,6 +3,7 @@ using Pwnlabs.Application.Abstractions;
 using Pwnlabs.Application.Labs.Dtos;
 using Pwnlabs.Domain.Entities;
 using Pwnlabs.Application.Common.Exceptions;
+using Pwnlabs.Domain.Enums;
 
 namespace Pwnlabs.Application.Labs;
 
@@ -50,14 +51,31 @@ public class LabService : ILabService
         return ToResponse(lab);
     }
 
-    public Task<List<LabResponse>> GetMyLabsAsync(Guid userId)
+    public async Task<List<LabResponse>> GetMyLabsAsync(Guid userId)
     {
-        throw new NotImplementedException();
+        var labs = await _labRepository.GetActiveByUserAsync(userId);
+
+        return labs.Select(l => ToResponse(l)).ToList();
     }
 
-    public Task StopAsync(Guid userId, Guid labId)
+    public async Task StopAsync(Guid userId, Guid labId)
     {
-        throw new NotImplementedException();
+        var lab = await _labRepository.GetByIdAsync(labId);
+
+        if (lab is null || lab.UserId != userId)
+        {
+            throw new NotFoundException("Lab not found.");
+        }
+
+        if (lab.Status != LabStatus.Running)
+        {
+            return;
+        }
+
+        await _orchestrator.StopLabAsync(lab.ContainerId);
+        lab.Status = LabStatus.Stopped;
+        lab.StoppedAt = DateTime.UtcNow;
+        await _labRepository.SaveChangesAsync();
     }
 
     private static LabResponse ToResponse(LabInstance lab)
