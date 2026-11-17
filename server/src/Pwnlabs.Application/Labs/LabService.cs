@@ -90,4 +90,37 @@ public class LabService : ILabService
             ExpiresAt = lab.ExpiresAt
         };
     }
+
+    public async Task<int> ExpireLabsAsync()
+    {
+        var expired = await _labRepository.GetExpiredRunningAsync(DateTime.UtcNow);
+
+        if (expired.Count == 0)
+        {
+            return 0;
+        }
+
+        int stoppedCount = 0;
+        foreach (var lab in expired)
+        {
+            try
+            {
+                await _orchestrator.StopLabAsync(lab.ContainerId);
+                lab.Status = LabStatus.Stopped;
+                lab.StoppedAt = DateTime.UtcNow;
+                stoppedCount++;
+            }
+            catch (Exception)
+            {
+                
+            }
+        }
+
+        if (stoppedCount > 0)
+        {
+            await _labRepository.SaveChangesAsync();
+        }
+
+        return stoppedCount;
+    }
 }

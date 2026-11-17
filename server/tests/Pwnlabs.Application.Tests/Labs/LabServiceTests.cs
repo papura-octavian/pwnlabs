@@ -157,4 +157,64 @@ public class LabServiceTests
         };
     }
 
+    [Fact]
+    public async Task ExpireLabsAsync_ExpiredLabs_StopsContainersAndMarksStopped()
+    {
+        // Arrange
+        var lab1 = CreateLab(_userId);
+        var lab2 = CreateLab(Guid.NewGuid());
+        _labRepository.GetExpiredRunningAsync(Arg.Any<DateTime>())
+            .Returns(new List<LabInstance> { lab1, lab2 });
+
+        // Act
+        var count = await _sut.ExpireLabsAsync();
+
+        // Assert
+        Assert.Equal(2, count);
+        await _orchestrator.Received(2).StopLabAsync("container-123");
+        Assert.Equal(LabStatus.Stopped, lab1.Status);
+        Assert.Equal(LabStatus.Stopped, lab2.Status);
+        Assert.NotNull(lab1.StoppedAt);
+        await _labRepository.Received(1).SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task ExpireLabsAsync_NoExpiredLabs_DoesNothing()
+    {
+        // Arrange
+        _labRepository.GetExpiredRunningAsync(Arg.Any<DateTime>())
+            .Returns(new List<LabInstance>());
+
+        // Act
+        var count = await _sut.ExpireLabsAsync();
+
+        // Assert
+        Assert.Equal(0, count);
+        await _orchestrator.DidNotReceive().StopLabAsync(Arg.Any<string>());
+        await _labRepository.DidNotReceive().SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task ExpireLabsAsync_OneContainerFailsToStop_StillStopsTheOthers()
+    {
+        // Arrange
+        var failing = CreateLab(_userId);
+        failing.ContainerId = "broken-container";
+        var ok = CreateLab(Guid.NewGuid());
+
+        _labRepository.GetExpiredRunningAsync(Arg.Any<DateTime>())
+            .Returns(new List<LabInstance> { failing, ok });
+        _orchestrator.StopLabAsync("broken-container")
+            .Returns(Task.FromException(new Exception("Docker error")));
+
+        // Act
+        var count = await _sut.ExpireLabsAsync();
+
+        // Assert
+        Assert.Equal(1, count);
+        Assert.Equal(LabStatus.Running, failing.Status);
+        Assert.Equal(LabStatus.Stopped, ok.Status);
+        await _labRepository.Received(1).SaveChangesAsync();
+    }
+
 }
