@@ -63,11 +63,18 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
 
     public async Task StopLabAsync(string containerId)
     {
-        // "docker stop" + "docker rm" intr-un singur apel
-        await _docker.Containers.RemoveContainerAsync(containerId, new ContainerRemoveParameters
+        try
         {
-            Force = true
-        });
+            // "docker stop" + "docker rm" intr-un singur apel
+            await _docker.Containers.RemoveContainerAsync(containerId, new ContainerRemoveParameters
+            {
+                Force = true
+            });
+        }
+        catch (DockerContainerNotFoundException)
+        {
+            // Already removed (e.g. manually) - the desired state is reached.
+        }
     }
 
     public void Dispose()
