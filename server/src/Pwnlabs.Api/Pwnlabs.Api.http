@@ -1,44 +1,77 @@
+# =====================================================================
+# pwnlabs API - manual test scenarios
+# Run each section top to bottom. Requests marked "# @name" store their
+# response, so later requests can reuse ids and tokens from them.
+# =====================================================================
+
 @baseurl = https://localhost:7173
+
+@aliceEmail = alice@example.com
+@alicePassword = CorrectHorse123
+
+@evilEmail = elivTwin@example.com
+@evilPassword = CorrectHorse123
+
+
+# =====================================================================
+# 0. HEALTH
+# =====================================================================
 
 ### Health check
 # Expected: 200 Healthy
 GET {{baseurl}}/health
 
-### Register a valid user
-# Expected: 201 Created, no password/passwordHash in body
+
+# =====================================================================
+# 1. REGISTRATION
+# The first two requests create the test users.
+# First run: 201. Later runs: 409 (users already exist) - that is fine.
+# =====================================================================
+
+### 1.1 Register alice
 POST {{baseurl}}/api/v1/auth/register
 Content-Type: application/json
 
 {
   "username": "alice",
-  "email": "alice@example.com",
-  "password": "CorrectHorse123"
+  "email": "{{aliceEmail}}",
+  "password": "{{alicePassword}}"
 }
 
-### Same email, different letter case
-# Expected: 409 Conflict
+### 1.2 Register evilTwin
+POST {{baseurl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "evilTwin",
+  "email": "{{evilEmail}}",
+  "password": "{{evilPassword}}"
+}
+
+### 1.3 Same email, different letter case
+# Expected: 409 "Email is already registered."
 POST {{baseurl}}/api/v1/auth/register
 Content-Type: application/json
 
 {
   "username": "alice2",
   "email": "ALICE@Example.com",
-  "password": "CorrectHorse123"
+  "password": "{{alicePassword}}"
 }
 
-### Same username
-# Expected: 409 Conflict
+### 1.4 Same username, different letter case
+# Expected: 409 "Username is already taken."
 POST {{baseurl}}/api/v1/auth/register
 Content-Type: application/json
 
 {
-  "username": "alice",
-  "email": "other@example.com",
-  "password": "CorrectHorse123"
+  "username": "ALICE",
+  "email": "alice-upper@example.com",
+  "password": "{{alicePassword}}"
 }
 
-### Invalid data
-# Expected: 400, errors for username, email and password
+### 1.5 Invalid data
+# Expected: 400 with errors for username, email and password
 POST {{baseurl}}/api/v1/auth/register
 Content-Type: application/json
 
@@ -48,150 +81,167 @@ Content-Type: application/json
   "password": "short"
 }
 
-### Same username, different letter case
-# Expected: 409, Username is already taken
-POST {{baseurl}}/api/v1/auth/register
-Content-Type: application/json
 
-{
-  "username": "ALICE",
-  "email": "alice-upper@example.com",
-  "password": "CorrectHorse123"
-}
+# =====================================================================
+# 2. LOGIN AND PROTECTED ENDPOINT
+# =====================================================================
 
-### Login
-# @name login
+### 2.1 Login as alice
+# Expected: 200 with accessToken + refresh cookie
+# @name loginAlice
 POST {{baseurl}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
-  "password": "CorrectHorse123"
+  "email": "{{aliceEmail}}",
+  "password": "{{alicePassword}}"
 }
 
-### Login with wrong password
-# Expected: 401
+### 2.2 Login with wrong password
+# Expected: 401 "Invalid email or password."
 POST {{baseurl}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
+  "email": "{{aliceEmail}}",
   "password": "WrongPassword123"
 }
 
-### Me with token
-# Expected: 200 with your data
+### 2.3 Current user with token
+# Expected: 200 with id, username, email, role
 GET {{baseurl}}/api/v1/users/me
-Authorization: Bearer {{login.response.body.accessToken}}
+Authorization: Bearer {{loginAlice.response.body.accessToken}}
 
-### Me without token
+### 2.4 Current user without token
 # Expected: 401
 GET {{baseurl}}/api/v1/users/me
 
-### Login (sets the refresh cookie)
-# @name login
-POST {{baseurl}}/api/v1/auth/login
-Content-Type: application/json
 
-{
-  "email": "alice@example.com",
-  "password": "CorrectHorse123"
-}
+# =====================================================================
+# 3. REFRESH AND LOGOUT
+# REST Client stores the refresh cookie from 2.1 and sends it automatically.
+# Run 2.1 right before this section.
+# =====================================================================
 
-### Refresh (REST Client sends the cookie automatically)
+### 3.1 Refresh
+# Expected: 200 with a new accessToken + a new refresh cookie
 POST {{baseurl}}/api/v1/auth/refresh
 
-### Logout
+### 3.2 Logout
+# Expected: 204, cookie deleted
 POST {{baseurl}}/api/v1/auth/logout
 
-### Refresh after logout
+### 3.3 Refresh after logout
 # Expected: 401
 POST {{baseurl}}/api/v1/auth/refresh
 
-### Reuse test: login
-# @name reuse
+
+# =====================================================================
+# 4. REFRESH TOKEN REUSE DETECTION
+# Simulates a stolen refresh token. The cookie jar is disabled so the
+# token is sent only from the Cookie header below.
+#   1. Run 4.1
+#   2. Copy the value after "refreshToken=" (up to the first ";") from the
+#      Set-Cookie response header into @stolenRefreshToken below
+#   3. Run 4.2 (200), then 4.3 (401 + all of alice's tokens revoked)
+# =====================================================================
+
+@stolenRefreshToken = PASTE_REFRESH_TOKEN_HERE
+
+### 4.1 Login (source of the "stolen" token)
 # @no-cookie-jar
 POST {{baseurl}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "alice@example.com",
-  "password": "CorrectHorse123"
+  "email": "{{aliceEmail}}",
+  "password": "{{alicePassword}}"
 }
 
-### Reuse test: first refresh with the stolen token
+### 4.2 Legitimate refresh
 # Expected: 200
 # @no-cookie-jar
 POST {{baseurl}}/api/v1/auth/refresh
-Cookie: refreshToken=D0F24F8EDCDF5E9E80CA1BD6B412AC4D12C4AB03AD0396AD04030858BECB76E7DD72719F0C8B95DC8BF64446E426906D5150D8686C60DEF094BF4ABDEFFC0B7E
+Cookie: refreshToken={{stolenRefreshToken}}
 
-### Reuse test: same token again
-# Expected: 401, and ALL of alice's tokens get revoked
+### 4.3 Same token used again
+# Expected: 401, all of alice's refresh tokens are revoked
 # @no-cookie-jar
 POST {{baseurl}}/api/v1/auth/refresh
-Cookie: refreshToken=D0F24F8EDCDF5E9E80CA1BD6B412AC4D12C4AB03AD0396AD04030858BECB76E7DD72719F0C8B95DC8BF64446E426906D5150D8686C60DEF094BF4ABDEFFC0B7E
+Cookie: refreshToken={{stolenRefreshToken}}
 
-### Login
-# @name login
-POST {{baseurl}}/api/v1/auth/login
-Content-Type: application/json
 
-{
-  "email": "alice@example.com",
-  "password": "CorrectHorse123"
-}
+# =====================================================================
+# 5. LABS - SINGLE USER
+# Run 2.1 first (loginAlice). Requires Docker and `docker pull nginx:alpine`.
+# =====================================================================
 
-### Start a lab
-# @name startLab
+### 5.1 Alice starts a lab
+# Expected: 201 with a url on a random port (e.g. http://127.0.0.1:55012)
+# @name aliceLab
 POST {{baseurl}}/api/v1/labs
-Authorization: Bearer {{login.response.body.accessToken}}
+Authorization: Bearer {{loginAlice.response.body.accessToken}}
 
-### My labs
+### 5.2 Alice lists her labs
+# Expected: 200 with the lab from 5.1
 GET {{baseurl}}/api/v1/labs
-Authorization: Bearer {{login.response.body.accessToken}}
+Authorization: Bearer {{loginAlice.response.body.accessToken}}
 
-### Start a second lab
-# Expected: 409
+### 5.3 Alice starts a second lab
+# Expected: 409 "You already have an active lab..."
 POST {{baseurl}}/api/v1/labs
-Authorization: Bearer {{login.response.body.accessToken}}
+Authorization: Bearer {{loginAlice.response.body.accessToken}}
 
-### Stop the lab
-DELETE {{baseurl}}/api/v1/labs/{{startLab.response.body.id}}
-Authorization: Bearer {{login.response.body.accessToken}}
 
-### REGISTER evilTwin
-POST {{baseurl}}/api/v1/auth/register
-Content-Type: application/json
+# =====================================================================
+# 6. LABS - TWO USERS AND ISOLATION
+# Keep alice's lab from 5.1 running.
+# =====================================================================
 
-{
-  "username": "evilTwin",
-  "email": "elivTwin@example.com",
-  "password": "CorrectHorse123"
-}
-
-### Login as evilTwin
+### 6.1 Login as evilTwin
 # @name loginEvil
 POST {{baseurl}}/api/v1/auth/login
 Content-Type: application/json
 
 {
-  "email": "elivTwin@example.com",
-  "password": "CorrectHorse123"
+  "email": "{{evilEmail}}",
+  "password": "{{evilPassword}}"
 }
 
-### evilTwin starts a lab
-# @name startLabEvil
+### 6.2 evilTwin starts a lab
+# Expected: 201, on a DIFFERENT port than alice's lab
+# @name evilLab
 POST {{baseurl}}/api/v1/labs
 Authorization: Bearer {{loginEvil.response.body.accessToken}}
 
-### evilTwin's labs
+### 6.3 evilTwin lists his labs
+# Expected: 200 with only his own lab (alice's lab is not visible)
 GET {{baseurl}}/api/v1/labs
 Authorization: Bearer {{loginEvil.response.body.accessToken}}
 
-### Stop the lab
-DELETE {{baseurl}}/api/v1/labs/{{startLab.response.body.id}}
-Authorization: Bearer {{login.response.body.accessToken}}
-
-### Stop lab 01a1db90
-DELETE {{baseurl}}/api/v1/labs/01a1db90-887e-7965-97e2-73a5094be1c2
+### 6.4 evilTwin tries to stop alice's lab (IDOR)
+# Expected: 404, alice's container keeps running
+DELETE {{baseurl}}/api/v1/labs/{{aliceLab.response.body.id}}
 Authorization: Bearer {{loginEvil.response.body.accessToken}}
+
+
+# =====================================================================
+# 7. CLEANUP
+# Each user stops their own lab.
+# Afterwards `docker ps --filter "label=pwnlabs.managed=true"` is empty.
+# =====================================================================
+
+### 7.1 Alice stops her lab
+# Expected: 204
+DELETE {{baseurl}}/api/v1/labs/{{aliceLab.response.body.id}}
+Authorization: Bearer {{loginAlice.response.body.accessToken}}
+
+### 7.2 evilTwin stops his lab
+# Expected: 204
+DELETE {{baseurl}}/api/v1/labs/{{evilLab.response.body.id}}
+Authorization: Bearer {{loginEvil.response.body.accessToken}}
+
+### 7.3 Stopping an already stopped lab
+# Expected: 204 (no-op)
+DELETE {{baseurl}}/api/v1/labs/{{aliceLab.response.body.id}}
+Authorization: Bearer {{loginAlice.response.body.accessToken}}
