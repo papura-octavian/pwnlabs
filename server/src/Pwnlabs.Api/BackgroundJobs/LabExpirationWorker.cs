@@ -17,6 +17,21 @@ public class LabExpirationWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+
+        try
+        {
+            await using var scope = _serviceScopeFactory.CreateAsyncScope();
+            var labService = scope.ServiceProvider.GetRequiredService<ILabService>();
+
+            await labService.ReconcileAsync();
+
+            _logger.LogInformation("Lab reconciliation completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lab reconciliation failed");
+        }   
+
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
 
         while (await timer.WaitForNextTickAsync(stoppingToken))
