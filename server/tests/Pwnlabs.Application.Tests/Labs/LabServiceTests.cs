@@ -250,4 +250,28 @@ public class LabServiceTests
         // Assert
         await _orchestrator.Received(1).StopLabAsync("orphan-container");
     }
+
+    [Fact]
+    public async Task ReconcileAsync_MatchingLabAndContainer_IsLeftAlone()
+    {
+        // Arrange
+        var lab = CreateLab(_userId);
+        _labRepository.GetAllRunningAsync().Returns(new List<LabInstance> { lab });
+        _orchestrator.ListManagedContainersAsync().Returns(new List<ManagedContainer>
+        {
+            new()
+            {
+                ContainerId = lab.ContainerId,
+                LabId = lab.Id
+            }
+        });
+
+        // Act
+        await _sut.ReconcileAsync();
+
+        // Assert
+        Assert.Equal(LabStatus.Running, lab.Status);
+        await _orchestrator.DidNotReceive().StopLabAsync(Arg.Any<string>());
+        await _labRepository.DidNotReceive().SaveChangesAsync();
+    }
 }
