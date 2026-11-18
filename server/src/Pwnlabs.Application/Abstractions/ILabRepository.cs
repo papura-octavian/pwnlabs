@@ -10,4 +10,5 @@ public interface ILabRepository
     Task<int> CountActiveByUserAsync(Guid userId);
     Task SaveChangesAsync();
     Task<List<LabInstance>> GetExpiredRunningAsync(DateTime now);
+    Task<List<LabInstance>> GetAllRunningAsync();
 }

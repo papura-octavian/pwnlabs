@@ -81,4 +81,9 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
     {
         _docker.Dispose();
     }
+
+    public Task<List<ManagedContainer>> ListManagedContainersAsync()
+    {
+        throw new NotImplementedException("Not implemented.");
+    }
 }

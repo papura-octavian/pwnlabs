@@ -8,4 +8,5 @@ public interface ILabService
     Task<List<LabResponse>> GetMyLabsAsync(Guid userId);
     Task StopAsync(Guid userId, Guid labId);
     Task<int> ExpireLabsAsync();
+    Task ReconcileAsync();
 }

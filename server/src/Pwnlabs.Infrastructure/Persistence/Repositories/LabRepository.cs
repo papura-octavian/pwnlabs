@@ -48,4 +48,10 @@ public class LabRepository : ILabRepository
             .Where(l => l.Status == LabStatus.Running && l.ExpiresAt <= now)
             .ToListAsync();
     }
+
+    public Task<List<LabInstance>> GetAllRunningAsync()
+    {
+        throw new NotImplementedException("Not implemented.");
+    }
+
 }

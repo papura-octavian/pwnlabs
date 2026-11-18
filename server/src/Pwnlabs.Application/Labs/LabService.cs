@@ -123,4 +123,28 @@ public class LabService : ILabService
 
         return stoppedCount;
     }
+
+    public async Task ReconcileAsync() 
+    {
+        var labs = await _labRepository.GetAllRunningAsync();
+        var containers = await _orchestrator.ListManagedContainersAsync();
+
+        var failedCount = 0;
+        var containerIds = containers.Select(c => c.ContainerId).ToHashSet();
+        foreach (var lab in labs)
+        {
+
+            if (!containerIds.Contains(lab.ContainerId))
+            {
+                lab.Status = LabStatus.Failed;
+                lab.StoppedAt = DateTime.UtcNow;
+                failedCount++;
+            }
+        }
+
+        if (failedCount > 0)
+        {
+            await _labRepository.SaveChangesAsync();
+        }
+    }
 }

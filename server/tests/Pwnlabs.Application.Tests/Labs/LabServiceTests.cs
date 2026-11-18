@@ -217,4 +217,22 @@ public class LabServiceTests
         await _labRepository.Received(1).SaveChangesAsync();
     }
 
+    [Fact]
+    public async Task ReconcileAsync_RunningLabWithoutContainer_IsMarkedFailed()
+    {
+        // Arrange
+        var lab = CreateLab(_userId);
+        _labRepository.GetAllRunningAsync().Returns(new List<LabInstance> { lab });
+        _orchestrator.ListManagedContainersAsync().Returns(new List<ManagedContainer>());
+
+        // Act
+        await _sut.ReconcileAsync();
+
+        // Assert
+        Assert.Equal(LabStatus.Failed, lab.Status);
+        Assert.NotNull(lab.StoppedAt);
+        await _labRepository.Received(1).SaveChangesAsync();
+    }
+
+    
 }
