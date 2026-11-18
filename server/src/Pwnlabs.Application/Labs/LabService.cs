@@ -112,7 +112,7 @@ public class LabService : ILabService
             }
             catch (Exception)
             {
-                
+
             }
         }
 
@@ -124,7 +124,7 @@ public class LabService : ILabService
         return stoppedCount;
     }
 
-    public async Task ReconcileAsync() 
+    public async Task ReconcileAsync()
     {
         var labs = await _labRepository.GetAllRunningAsync();
         var containers = await _orchestrator.ListManagedContainersAsync();
@@ -146,5 +146,15 @@ public class LabService : ILabService
         {
             await _labRepository.SaveChangesAsync();
         }
+
+        var runningLabIds = labs.Select(l => l.Id).ToHashSet();
+        foreach (var container in containers)
+        {
+            if (container.LabId is null || !runningLabIds.Contains(container.LabId.Value))
+            {
+                await _orchestrator.StopLabAsync(container.ContainerId);
+            }
+        }
+
     }
 }

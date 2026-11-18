@@ -234,5 +234,20 @@ public class LabServiceTests
         await _labRepository.Received(1).SaveChangesAsync();
     }
 
-    
+    [Fact]
+    public async Task ReconcileAsync_ContainerWithoutRunningLab_IsRemoved()
+    {
+        // Arrange
+        _labRepository.GetAllRunningAsync().Returns(new List<LabInstance>());
+        _orchestrator.ListManagedContainersAsync().Returns(new List<ManagedContainer>
+        {
+            new() {ContainerId = "orphan-container", LabId = Guid.NewGuid()}
+        });
+
+        // Act
+        await _sut.ReconcileAsync();
+
+        // Assert
+        await _orchestrator.Received(1).StopLabAsync("orphan-container");
+    }
 }
