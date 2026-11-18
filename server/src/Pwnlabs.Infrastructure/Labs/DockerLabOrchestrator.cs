@@ -63,15 +63,50 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
 
     public async Task StopLabAsync(string containerId)
     {
-        // "docker stop" + "docker rm" intr-un singur apel
-        await _docker.Containers.RemoveContainerAsync(containerId, new ContainerRemoveParameters
+        try
         {
-            Force = true
-        });
+            // "docker stop" + "docker rm" intr-un singur apel
+            await _docker.Containers.RemoveContainerAsync(containerId, new ContainerRemoveParameters
+            {
+                Force = true
+            });
+        }
+        catch (DockerContainerNotFoundException)
+        {
+            // Already removed (e.g. manually) - the desired state is reached.
+        }
     }
 
     public void Dispose()
     {
         _docker.Dispose();
+    }
+
+    public async Task<List<ManagedContainer>> ListManagedContainersAsync()
+    {
+        var containers = await _docker.Containers.ListContainersAsync(new ContainersListParameters
+        {
+            All = true,
+            Filters = new Dictionary<string, IDictionary<string, bool>>
+            {
+                ["label"] = new Dictionary<string, bool> { ["pwnlabs.managed=true"] = true }
+            }
+        });
+
+        return containers.Select(c => new ManagedContainer
+        {
+            ContainerId = c.ID,
+            LabId = ParseLabId(c.Labels)
+        }).ToList();
+    }
+
+    private static Guid? ParseLabId(IDictionary<string, string> labels)
+    {
+        if (labels.TryGetValue("pwnlabs.lab-id", out var text) && Guid.TryParse(text, out var labId))
+        {
+            return labId;
+        }
+
+        return null;
     }
 }

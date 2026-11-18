@@ -41,4 +41,19 @@ public class LabRepository : ILabRepository
     {
         await _db.SaveChangesAsync();
     }
+
+    public async Task<List<LabInstance>> GetExpiredRunningAsync(DateTime now)
+    {
+        return await _db.LabInstances
+            .Where(l => l.Status == LabStatus.Running && l.ExpiresAt <= now)
+            .ToListAsync();
+    }
+
+    public async Task<List<LabInstance>> GetAllRunningAsync()
+    {
+        return await _db.LabInstances
+            .Where(l => l.Status == LabStatus.Running)
+            .ToListAsync();
+    }
+
 }

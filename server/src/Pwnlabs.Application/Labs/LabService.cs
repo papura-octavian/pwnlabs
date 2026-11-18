@@ -90,4 +90,71 @@ public class LabService : ILabService
             ExpiresAt = lab.ExpiresAt
         };
     }
+
+    public async Task<int> ExpireLabsAsync()
+    {
+        var expired = await _labRepository.GetExpiredRunningAsync(DateTime.UtcNow);
+
+        if (expired.Count == 0)
+        {
+            return 0;
+        }
+
+        int stoppedCount = 0;
+        foreach (var lab in expired)
+        {
+            try
+            {
+                await _orchestrator.StopLabAsync(lab.ContainerId);
+                lab.Status = LabStatus.Stopped;
+                lab.StoppedAt = DateTime.UtcNow;
+                stoppedCount++;
+            }
+            catch (Exception)
+            {
+
+            }
+        }
+
+        if (stoppedCount > 0)
+        {
+            await _labRepository.SaveChangesAsync();
+        }
+
+        return stoppedCount;
+    }
+
+    public async Task ReconcileAsync()
+    {
+        var labs = await _labRepository.GetAllRunningAsync();
+        var containers = await _orchestrator.ListManagedContainersAsync();
+
+        var failedCount = 0;
+        var containerIds = containers.Select(c => c.ContainerId).ToHashSet();
+        foreach (var lab in labs)
+        {
+
+            if (!containerIds.Contains(lab.ContainerId))
+            {
+                lab.Status = LabStatus.Failed;
+                lab.StoppedAt = DateTime.UtcNow;
+                failedCount++;
+            }
+        }
+
+        if (failedCount > 0)
+        {
+            await _labRepository.SaveChangesAsync();
+        }
+
+        var runningLabIds = labs.Select(l => l.Id).ToHashSet();
+        foreach (var container in containers)
+        {
+            if (container.LabId is null || !runningLabIds.Contains(container.LabId.Value))
+            {
+                await _orchestrator.StopLabAsync(container.ContainerId);
+            }
+        }
+
+    }
 }
