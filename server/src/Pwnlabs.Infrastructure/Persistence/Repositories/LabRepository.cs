@@ -49,9 +49,11 @@ public class LabRepository : ILabRepository
             .ToListAsync();
     }
 
-    public Task<List<LabInstance>> GetAllRunningAsync()
+    public async Task<List<LabInstance>> GetAllRunningAsync()
     {
-        throw new NotImplementedException("Not implemented.");
+        return await _db.LabInstances
+            .Where(l => l.Status == LabStatus.Running)
+            .ToListAsync();
     }
 
 }

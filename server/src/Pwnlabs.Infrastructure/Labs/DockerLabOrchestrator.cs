@@ -82,8 +82,31 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
         _docker.Dispose();
     }
 
-    public Task<List<ManagedContainer>> ListManagedContainersAsync()
+    public async Task<List<ManagedContainer>> ListManagedContainersAsync()
     {
-        throw new NotImplementedException("Not implemented.");
+        var containers = await _docker.Containers.ListContainersAsync(new ContainersListParameters
+        {
+            All = true,
+            Filters = new Dictionary<string, IDictionary<string, bool>>
+            {
+                ["label"] = new Dictionary<string, bool> { ["pwnlabs.managed=true"] = true }
+            }
+        });
+
+        return containers.Select(c => new ManagedContainer
+        {
+            ContainerId = c.ID,
+            LabId = ParseLabId(c.Labels)
+        }).ToList();
+    }
+
+    private static Guid? ParseLabId(IDictionary<string, string> labels)
+    {
+        if (labels.TryGetValue("pwnlabs.lab-id", out var text) && Guid.TryParse(text, out var labId))
+        {
+            return labId;
+        }
+
+        return null;
     }
 }
