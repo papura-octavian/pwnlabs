@@ -23,9 +23,17 @@ public class RoomService : IRoomService
         
         if (room is null)
         {
-            throw new NotFoundException("Room Not Found!!!");
+            throw new NotFoundException("Room not found.");
         }
 
-        throw new NotImplementedException("Function is not implemented!");
+        return new RoomResponse
+        {
+            Slug = room.Slug,
+            Title = room.Title,
+            Description = room.Description,
+            Category = room.Category.ToString(),
+            Difficulty = room.Difficulty.ToString(),
+            Points = room.Points
+        };
     }
 }
