@@ -1,6 +1,7 @@
 using Pwnlabs.Application.Rooms.Dtos;
 using Pwnlabs.Application.Abstractions;
 using Pwnlabs.Application.Common.Exceptions;
+using Pwnlabs.Domain.Entities;
 
 namespace Pwnlabs.Application.Rooms;
 
@@ -20,15 +21,7 @@ public class RoomService : IRoomService
         var responses = new List<RoomResponse>();
         foreach (var room in rooms)
         {
-            responses.Add(new RoomResponse
-            {
-                Slug = room.Slug,
-                Title = room.Title,
-                Description = room.Description,
-                Category = room.Category.ToString(),
-                Difficulty = room.Difficulty.ToString(),
-                Points = room.Points
-            });
+            responses.Add(ToResponse(room));
         }
 
         return responses;
@@ -42,6 +35,11 @@ public class RoomService : IRoomService
             throw new NotFoundException("Room not found.");
         }
 
+        return ToResponse(room);
+    }
+
+    private static RoomResponse ToResponse(Room room)
+    {
         return new RoomResponse
         {
             Slug = room.Slug,
