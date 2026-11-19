@@ -13,9 +13,25 @@ public class RoomService : IRoomService
         _roomRepository = roomRepository;
     }
 
-    public Task<List<RoomResponse>> GetAllAsync()
+    public async Task<List<RoomResponse>> GetAllAsync()
     {
-        throw new NotImplementedException("Function is not implemented!");
+        var rooms = await _roomRepository.GetPublishedAsync();
+
+        var responses = new List<RoomResponse>();
+        foreach (var room in rooms)
+        {
+            responses.Add(new RoomResponse
+            {
+                Slug = room.Slug,
+                Title = room.Title,
+                Description = room.Description,
+                Category = room.Category.ToString(),
+                Difficulty = room.Difficulty.ToString(),
+                Points = room.Points
+            });
+        }
+
+        return responses;
     }
     public async Task<RoomResponse> GetBySlugAsync(string slug)
     {
