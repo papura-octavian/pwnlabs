@@ -58,4 +58,44 @@ public class RoomServiceTests
         Assert.Equal(18, result.Points);
     }
 
+    [Fact]
+    public async Task GetAllAsync_ReturnsMappedRoomsInRepositoryOrder()
+    {
+        // Arrange
+        var room1 = new Room
+        {
+            Slug = "get-pwned",
+            Title = "Room101",
+            Description = "reverse connection tcp exploit to get a shell",
+            Category = RoomCategory.Pwn,
+            Difficulty = RoomDifficulty.Easy,
+            Points = 18,
+            Image = "pwnlabs/get-pwned:latest",
+            ContainerPort = 54322,
+            IsPublished = true
+        };
+
+        var room2 = new Room
+        {
+            Slug = "basic-crypto",
+            Title = "Room30",
+            Description = "Use cryptographic tools to decrypt the message and get the flag",
+            Category = RoomCategory.Crypto,
+            Difficulty = RoomDifficulty.Easy,
+            Points = 12,
+            Image = "pwnlabs/basic-crypto:latest",
+            ContainerPort = 54301,
+            IsPublished = true
+        };
+
+        _roomRepository.GetPublishedAsync().Returns(new List<Room> { room1, room2 });
+
+        // Act
+        var result = await _sut.GetAllAsync();
+
+        // Assert
+        Assert.Equal(2, result.Count());
+        Assert.Equal("get-pwned", result[0].Slug);
+        Assert.Equal("basic-crypto", result[1].Slug);
+    }
 }
