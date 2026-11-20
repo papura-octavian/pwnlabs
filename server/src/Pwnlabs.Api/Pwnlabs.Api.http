@@ -245,3 +245,28 @@ Authorization: Bearer {{loginEvil.response.body.accessToken}}
 # Expected: 204 (no-op)
 DELETE {{baseurl}}/api/v1/labs/{{aliceLab.response.body.id}}
 Authorization: Bearer {{loginAlice.response.body.accessToken}}
+
+###############################################################
+# 8. Rooms (public catalog, no token needed)
+###############################################################
+
+### 8.1 List all published rooms -> 200, array with nginx-welcome
+# @name listRooms
+GET {{baseurl}}/api/v1/rooms
+Accept: application/json
+
+### 8.2 Get one room by slug -> 200, single object
+# @name getRoom
+GET {{baseurl}}/api/v1/rooms/nginx-welcome
+Accept: application/json
+
+### 8.3 Unknown slug -> 404 ProblemDetails, detail "Room not found."
+# @name getMissingRoom
+GET {{baseurl}}/api/v1/rooms/does-not-exist
+Accept: application/json
+
+### 8.4 Works even with a bad token -> 200 (endpoint does not read it)
+# @name listRoomsBadToken
+GET {{baseurl}}/api/v1/rooms
+Authorization: Bearer not-a-real-token
+Accept: application/json
