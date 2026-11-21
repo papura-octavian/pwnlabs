@@ -16,6 +16,7 @@ public class LabServiceTests
     private readonly LabService _sut;
 
     private readonly Guid _userId = Guid.NewGuid();
+    
 
     public LabServiceTests()
     {
@@ -34,6 +35,7 @@ public class LabServiceTests
     {
         // Arrange
         _labRepository.CountActiveByUserAsync(_userId).Returns(0);
+        _roomRepository.GetPublishedBySlugAsync("nginx-welcome").Returns(CreateRoom());
         _orchestrator.StartLabAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>())
             .Returns(new StartedLab
             {
@@ -143,19 +145,6 @@ public class LabServiceTests
         // Assert
         Assert.Equal(2, result.Count);
         Assert.All(result, r => Assert.Equal("http://127.0.0.1:55012", r.Url));
-    }
-
-    private static LabInstance CreateLab(Guid ownerId, LabStatus status = LabStatus.Running)
-    {
-        return new LabInstance
-        {
-            UserId = ownerId,
-            ContainerId = "container-123",
-            Image = "nginx:alpine",
-            HostPort = 55012,
-            Status = status,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60)
-        };
     }
 
     [Fact]
@@ -290,5 +279,34 @@ public class LabServiceTests
         await _orchestrator.DidNotReceive()
             .StartLabAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>());
         _labRepository.DidNotReceive().Add(Arg.Any<LabInstance>());
+    }
+
+    private static LabInstance CreateLab(Guid ownerId, LabStatus status = LabStatus.Running)
+    {
+        return new LabInstance
+        {
+            UserId = ownerId,
+            ContainerId = "container-123",
+            Image = "nginx:alpine",
+            HostPort = 55012,
+            Status = status,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+        };
+    }
+
+        private static Room CreateRoom(string slug = "nginx-welcome")
+    {
+        return new Room
+        {
+            Slug = slug,
+            Title = "Nginx Welcome",
+            Description = "Test room",
+            Category = RoomCategory.Web,
+            Difficulty = RoomDifficulty.Easy,
+            Points = 10,
+            Image = "nginx:alpine",
+            ContainerPort = 80,
+            IsPublished = true
+        };
     }
 }
