@@ -14,4 +14,8 @@ public class LabInstance
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public required DateTime ExpiresAt { get; set; }
     public DateTime? StoppedAt { get; set; }
+
+    // Room relation
+    public Guid RoomId { get; set; }
+    public Room? Room { get; set; }
 }

@@ -47,6 +47,9 @@ namespace Pwnlabs.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -62,6 +65,8 @@ namespace Pwnlabs.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ContainerId")
                         .IsUnique();
+
+                    b.HasIndex("RoomId");
 
                     b.HasIndex("UserId");
 
@@ -225,11 +230,19 @@ namespace Pwnlabs.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Pwnlabs.Domain.Entities.LabInstance", b =>
                 {
+                    b.HasOne("Pwnlabs.Domain.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Pwnlabs.Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Room");
 
                     b.Navigation("User");
                 });

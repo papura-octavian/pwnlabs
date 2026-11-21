@@ -35,5 +35,10 @@ public class LabInstanceConfiguration : IEntityTypeConfiguration<LabInstance>
             .HasForeignKey(l => l.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Room relation
+        builder.HasOne(l => l.Room)
+            .WithMany()
+            .HasForeignKey(l => l.RoomId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
