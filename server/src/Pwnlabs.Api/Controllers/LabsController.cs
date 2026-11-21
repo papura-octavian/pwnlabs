@@ -20,9 +20,9 @@ public class LabsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<LabResponse>> Start()
+    public async Task<ActionResult<LabResponse>> Start(StartLabRequest request)
     {
-        var response = await _labService.StartAsync(CurrentUserId);
+        var response = await _labService.StartAsync(CurrentUserId, request.RoomSlug);
         return StatusCode(
             StatusCodes.Status201Created,
             response

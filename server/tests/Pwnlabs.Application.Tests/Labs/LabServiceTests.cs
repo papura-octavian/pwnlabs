@@ -12,6 +12,7 @@ public class LabServiceTests
 {
     private readonly ILabRepository _labRepository = Substitute.For<ILabRepository>();
     private readonly ILabOrchestrator _orchestrator = Substitute.For<ILabOrchestrator>();
+    private readonly IRoomRepository _roomRepository = Substitute.For<IRoomRepository>();
     private readonly LabService _sut;
 
     private readonly Guid _userId = Guid.NewGuid();
@@ -25,7 +26,7 @@ public class LabServiceTests
             MaxActiveLabsPerUser = 1
         });
 
-        _sut = new LabService(_labRepository, _orchestrator, options);
+        _sut = new LabService(_labRepository, _orchestrator, _roomRepository, options);
     }
 
     [Fact]
@@ -42,7 +43,7 @@ public class LabServiceTests
 
         // Act
         var before = DateTime.UtcNow;
-        var result = await _sut.StartAsync(_userId);
+        var result = await _sut.StartAsync(_userId, "nginx-welcome");
         var after = DateTime.UtcNow;
 
         // Assert
@@ -66,7 +67,7 @@ public class LabServiceTests
         _labRepository.CountActiveByUserAsync(_userId).Returns(1);
 
         // Act + Assert
-        await Assert.ThrowsAsync<ConflictException>(() => _sut.StartAsync(_userId));
+        await Assert.ThrowsAsync<ConflictException>(() => _sut.StartAsync(_userId, "nginx-welcome"));
         await _orchestrator.DidNotReceive().StartLabAsync(
             Arg.Any<string>(), 
             Arg.Any<Guid>(), 
@@ -273,5 +274,21 @@ public class LabServiceTests
         Assert.Equal(LabStatus.Running, lab.Status);
         await _orchestrator.DidNotReceive().StopLabAsync(Arg.Any<string>());
         await _labRepository.DidNotReceive().SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task StartAsync_UnknownRoom_ThrowsNotFoundAndDoesNotStartContainer()
+    {
+        // Arrange 
+        var userId = Guid.CreateVersion7();
+        _roomRepository.GetPublishedBySlugAsync("does-not-exist").Returns((Room?)null);
+
+        // Act + Assert
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => _sut.StartAsync(userId, "does-not-exist"));
+
+        await _orchestrator.DidNotReceive()
+            .StartLabAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>());
+        _labRepository.DidNotReceive().Add(Arg.Any<LabInstance>());
     }
 }

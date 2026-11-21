@@ -4,7 +4,7 @@ namespace Pwnlabs.Application.Labs;
 
 public interface ILabService
 {
-    Task<LabResponse> StartAsync(Guid userId);
+    Task<LabResponse> StartAsync(Guid userId, string roomSlug);
     Task<List<LabResponse>> GetMyLabsAsync(Guid userId);
     Task StopAsync(Guid userId, Guid labId);
     Task<int> ExpireLabsAsync();

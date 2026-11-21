@@ -11,24 +11,34 @@ public class LabService : ILabService
 {
     private readonly ILabRepository _labRepository;
     private readonly ILabOrchestrator _orchestrator;
+    private readonly IRoomRepository _roomRepository;
     private readonly LabOptions _options;
 
     public LabService(
         ILabRepository labRepository,
         ILabOrchestrator orchestrator,
+        IRoomRepository roomRepository,
         IOptions<LabOptions> options)
     {
         _labRepository = labRepository;
         _orchestrator = orchestrator;
+        _roomRepository = roomRepository;
         _options = options.Value;
     }
 
-    public async Task<LabResponse> StartAsync(Guid userId)
+    public async Task<LabResponse> StartAsync(Guid userId, string roomSlug)
     {
         var count = await _labRepository.CountActiveByUserAsync(userId);
         if (count >= _options.MaxActiveLabsPerUser)
         {
             throw new ConflictException("You already have an active lab. Stop it before starting a new one.");
+        }
+
+        var room = await _roomRepository.GetPublishedBySlugAsync(roomSlug);
+        
+        if (room is null)
+        {
+            throw new NotFoundException("Room not found.");
         }
 
         var labId = Guid.CreateVersion7();
