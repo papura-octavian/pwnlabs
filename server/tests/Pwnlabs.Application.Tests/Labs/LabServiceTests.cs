@@ -319,7 +319,8 @@ public class LabServiceTests
             Image = "nginx:alpine",
             HostPort = 55012,
             Status = status,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+            ExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            RoomId = Guid.CreateVersion7()
         };
     }
 

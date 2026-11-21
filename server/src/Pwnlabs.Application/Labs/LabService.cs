@@ -43,16 +43,17 @@ public class LabService : ILabService
 
         var labId = Guid.CreateVersion7();
 
-        var started = await _orchestrator.StartLabAsync(_options.DefaultImage, _options.ContainerPort, labId, userId);
+        var started = await _orchestrator.StartLabAsync(room.Image, room.ContainerPort, labId, userId);
 
         var lab = new LabInstance
         {
             Id = labId,
             UserId = userId,
             ContainerId = started.ContainerId,
-            Image = _options.DefaultImage,
+            Image = room.Image,
             HostPort = started.HostPort,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(_options.LifetimeMinutes)
+            ExpiresAt = DateTime.UtcNow.AddMinutes(_options.LifetimeMinutes),
+            RoomId = room.Id
         };
 
         _labRepository.Add(lab);
