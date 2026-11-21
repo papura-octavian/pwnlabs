@@ -35,7 +35,7 @@ public class LabService : ILabService
         }
 
         var room = await _roomRepository.GetPublishedBySlugAsync(roomSlug);
-        
+
         if (room is null)
         {
             throw new NotFoundException("Room not found.");
@@ -43,7 +43,7 @@ public class LabService : ILabService
 
         var labId = Guid.CreateVersion7();
 
-        var started = await _orchestrator.StartLabAsync(_options.DefaultImage, labId, userId);
+        var started = await _orchestrator.StartLabAsync(_options.DefaultImage, _options.ContainerPort, labId, userId);
 
         var lab = new LabInstance
         {

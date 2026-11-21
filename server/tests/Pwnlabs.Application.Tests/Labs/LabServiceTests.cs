@@ -36,7 +36,7 @@ public class LabServiceTests
         // Arrange
         _labRepository.CountActiveByUserAsync(_userId).Returns(0);
         _roomRepository.GetPublishedBySlugAsync("nginx-welcome").Returns(CreateRoom());
-        _orchestrator.StartLabAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>())
+        _orchestrator.StartLabAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<Guid>(), Arg.Any<Guid>())
             .Returns(new StartedLab
             {
                 ContainerId = "container-123",
@@ -49,7 +49,7 @@ public class LabServiceTests
         var after = DateTime.UtcNow;
 
         // Assert
-        await _orchestrator.Received(1).StartLabAsync("nginx:alpine", Arg.Any<Guid>(), _userId);
+        await _orchestrator.Received(1).StartLabAsync("nginx:alpine", Arg.Any<int>(), Arg.Any<Guid>(), _userId);
 
         _labRepository.Received(1).Add(Arg.Is<LabInstance>(l =>
             l.UserId == _userId &&
@@ -71,7 +71,8 @@ public class LabServiceTests
         // Act + Assert
         await Assert.ThrowsAsync<ConflictException>(() => _sut.StartAsync(_userId, "nginx-welcome"));
         await _orchestrator.DidNotReceive().StartLabAsync(
-            Arg.Any<string>(), 
+            Arg.Any<string>(),
+            Arg.Any<int>(), 
             Arg.Any<Guid>(), 
             Arg.Any<Guid>()
         );
@@ -277,8 +278,36 @@ public class LabServiceTests
             () => _sut.StartAsync(userId, "does-not-exist"));
 
         await _orchestrator.DidNotReceive()
-            .StartLabAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<Guid>());
+            .StartLabAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<Guid>(), Arg.Any<Guid>());
         _labRepository.DidNotReceive().Add(Arg.Any<LabInstance>());
+    }
+
+    [Fact]
+    public async Task StartAsync_KnownRoom_StartsContainerWithRoomImageAndPort()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+
+        var room = CreateRoom("custom-room");
+        room.Image = "pwnlabs/test-room:1";
+        room.ContainerPort = 8080;
+
+        _roomRepository.GetPublishedBySlugAsync("custom-room").Returns(room);
+
+        _orchestrator
+            .StartLabAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<Guid>(), Arg.Any<Guid>())
+            .Returns(new StartedLab { ContainerId = "container-123", HostPort = 49152 });
+
+        // Act
+        await _sut.StartAsync(userId, "custom-room");
+
+        // Assert
+        await _orchestrator.Received(1)
+            .StartLabAsync("pwnlabs/test-room:1", 8080, Arg.Any<Guid>(), userId);
+
+        _labRepository.Received(1).Add(Arg.Is<LabInstance>(l =>
+            l.RoomId == room.Id &&
+            l.Image == "pwnlabs/test-room:1"));
     }
 
     private static LabInstance CreateLab(Guid ownerId, LabStatus status = LabStatus.Running)
@@ -294,7 +323,7 @@ public class LabServiceTests
         };
     }
 
-        private static Room CreateRoom(string slug = "nginx-welcome")
+    private static Room CreateRoom(string slug = "nginx-welcome")
     {
         return new Room
         {

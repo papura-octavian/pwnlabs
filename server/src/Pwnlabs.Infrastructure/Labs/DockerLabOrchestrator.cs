@@ -18,9 +18,9 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
         _docker = new DockerClientConfiguration().CreateClient();
     }
 
-    public async Task<StartedLab> StartLabAsync(string image, Guid labId, Guid userId)
+    public async Task<StartedLab> StartLabAsync(string image, int containerPort, Guid labId, Guid userId)
     {
-        var containerPort = $"{_options.ContainerPort}/tcp";
+        var portKey = $"{containerPort}/tcp";
 
         // 1. "docker create"
         var created = await _docker.Containers.CreateContainerAsync(new CreateContainerParameters
@@ -35,13 +35,13 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
             },
             ExposedPorts = new Dictionary<string, EmptyStruct>
             {
-                [containerPort] = default
+                [portKey] = default
             },
             HostConfig = new HostConfig
             {
                 PortBindings = new Dictionary<string, IList<PortBinding>>
                 {
-                    [containerPort] = [new PortBinding { HostIP = "127.0.0.1", HostPort = "" }]
+                    [portKey] = [new PortBinding { HostIP = "127.0.0.1", HostPort = "" }]
                 },
                 Memory = _options.MemoryLimitMb * 1024L * 1024L
             }
@@ -52,7 +52,7 @@ public class DockerLabOrchestrator : ILabOrchestrator, IDisposable
 
         // 3. "docker port" / "docker inspect"
         var inspect = await _docker.Containers.InspectContainerAsync(created.ID);
-        var hostPort = int.Parse(inspect.NetworkSettings.Ports[containerPort][0].HostPort);
+        var hostPort = int.Parse(inspect.NetworkSettings.Ports[portKey][0].HostPort);
 
         return new StartedLab
         {
